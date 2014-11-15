@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="lib/bridj-0.6.2.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-api-1.7.7.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-jdk14-1.7.7.jar"/>
+	<classpathentry kind="lib" path="lib/webcam-capture-0.3.11-20141019.141655-2.jar"/>
+	<classpathentry kind="lib" path="lib/webcam/bridj-0.6.3-20130316.190111-13.jar"/>
+	<classpathentry kind="lib" path="lib/webcam/commons-codec-1.6.jar"/>
+	<classpathentry kind="lib" path="lib/webcam/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/webcam/httpclient-4.2.3.jar"/>
+	<classpathentry kind="lib" path="lib/webcam/httpcore-4.2.2.jar"/>
+	<classpathentry kind="lib" path="lib/webcam/httpmime-4.2.3.jar"/>
+	<classpathentry kind="lib" path="lib/webcam/slf4j-api-1.7.2.jar"/>
+	<classpathentry kind="lib" path="lib/webcam/webcam-capture-driver-ipcam-0.3.10-RC7.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

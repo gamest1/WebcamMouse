@@ -8,6 +8,7 @@ import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamPanel;
 import com.github.sarxos.webcam.ds.ipcam.*;
 
+
 public class WebcamMouse {
 	static {
 	    //Webcam.setDriver(new IpCamDriver());
