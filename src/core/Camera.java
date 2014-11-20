@@ -15,6 +15,7 @@ import java.awt.Dimension;
 public class Camera {
 	private static Camera instance = null;
 	private Webcam webcam = null;
+	private boolean flip = false;
 	
 	
 	private Camera() {
@@ -58,6 +59,18 @@ public class Camera {
 	public BufferedImage getImage() {
 		BufferedImage out = webcam.getImage();
 		return out;
+	}
+	
+	public void setFlip(boolean value) {
+		flip = value;
+	}
+	
+	public boolean getFlip() {
+		return flip;
+	}
+	
+	public void toggleFlip() {
+		flip = !flip;
 	}
 	
 }

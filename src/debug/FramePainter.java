@@ -9,16 +9,17 @@ import java.awt.Graphics;
 
 public class FramePainter extends JPanel implements Runnable {
 	private static FramePainter instance = null;
-	private static int WIDTH = 512;
-	private static int HEIGHT = 512;
-	private static int numPixels;
+	private static int WIDTH;
+	private static int HEIGHT;
+	//private static int numPixels;
 	FrameBuffer buffer = null;
 	JPanel panel = null;
 	Frame frame = null;
-	private static boolean active = false;
+	private boolean active = false;
+	private int mode = 1;			// 1 = frame painter; 2 = calibration painter;
 	
 	private FramePainter() {
-		numPixels = WIDTH * HEIGHT;
+		//numPixels = WIDTH * HEIGHT;
 		buffer = FrameBuffer.getInstance();
 		panel = new JPanel();
 	}
@@ -50,10 +51,19 @@ public class FramePainter extends JPanel implements Runnable {
 			return;
 		}
 		super.paintComponent(g);
+		if (mode == 1) {
+			paintFrames(g);
+		}
+		else if (mode == 2) {
+			paintCalibration(g);
+		}
+	}
+	
+	private void paintFrames(Graphics g) {
 		BufferedImage img = frame.getImage();
 		WIDTH = img.getWidth();
 		HEIGHT = img.getHeight();
-		numPixels = WIDTH*HEIGHT;
+		int numPixels = WIDTH*HEIGHT;
 		g.drawImage(img,0,0,WIDTH,HEIGHT,null);
 		double[][] coord = frame.getCoords();
 		double[] size = frame.getSizes();
@@ -70,15 +80,36 @@ public class FramePainter extends JPanel implements Runnable {
 		}
 	}
 	
+	private void paintCalibration(Graphics g) {
+		BufferedImage img = frame.getImage();
+		WIDTH = img.getWidth();
+		HEIGHT = img.getHeight();
+		g.drawImage(img,0,0,WIDTH,HEIGHT,null);
+		int r = 20;
+		int a = (int)(r*(0.5*Math.sqrt(2)));
+		int x = WIDTH/2;
+		int y = HEIGHT/2;
+		//g.setColor(Color.WHITE);
+		//g.fillRect(0, 0, WIDTH, HEIGHT);
+		g.setColor(Color.RED);
+		g.drawOval(x - r, y - r, r*2, r*2);
+		g.drawLine(x - a, y - a, x + a, y + a);
+		g.drawLine(x - a, y + a, x + a, y - a);
+	}
+	
 	public Dimension getPreferredSize() {
-        return new Dimension(WIDTH, HEIGHT);
+        return Camera.getInstance().getWebcam().getViewSize();
     }
 	
 	public JPanel getPanel() {
 		return panel;
 	}
 	
-	public static void setActive(boolean set) {
+	public void setActive(boolean set) {
 		active = set;
+	}
+	
+	public void setMode(int var) {
+		mode = var;
 	}
 }

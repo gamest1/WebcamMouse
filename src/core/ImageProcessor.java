@@ -2,13 +2,13 @@ package core;
 
 import java.awt.image.BufferedImage;
 import java.util.Random;
+import java.awt.Graphics;
 
 
 public class ImageProcessor {
 	BufferedImage image = null;
 	double[][] coord = null;
 	double[] size = null;
-	static boolean flip = false;
 	static Frame lastFrame = new Frame(new double[][]{{0.5,0.5,0.5},{0.5,0.5,0.5},{0.5,0.5,0.5}},new double[]{0,0,0},0, new BufferedImage(50,50,BufferedImage.TYPE_INT_RGB)); // default frame, all dots centered, no size, timestamp is 0
 	
 	public ImageProcessor() {
@@ -16,6 +16,26 @@ public class ImageProcessor {
 		if (image == null) {
 			System.out.println("No image in Image Processor, why?");
 			System.exit(1);
+		}
+		if (Camera.getInstance().getFlip()) {
+			int w = image.getWidth();
+			int h = image.getHeight();
+			BufferedImage copy = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+			Graphics g = copy.getGraphics(); 
+			int sx1, sx2, sy1, sy2; // source rectangle coordinates
+			int dx1, dx2, dy1, dy2; // destination rectangle coordinates
+			dx1 = 0;
+			dy1 = 0;
+			dx2 = w;
+			dy2 = h;
+
+			sx1 = w;
+			sy1 = 0;
+			sx2 = 0;
+			sy2 = h;
+			
+			g.drawImage(image, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, null);
+			image = copy;
 		}
 		FrameBuffer buffer = FrameBuffer.getInstance();
 		long timestamp = System.nanoTime();
@@ -67,9 +87,10 @@ public class ImageProcessor {
 		
 		// sample algorithm to track a certain shade of blue
 		int rgb, hit=0;
-		double[] hsl;
-		double upper = 3.8;
-		double lower = 3.5;
+		float[] hsl;
+		float[] tmp = Colors.getInstance().getHSB(0);
+		double upper = tmp[0] * 1.1;
+		double lower = tmp[0] * 0.9;
 		int minHit = 8;
 		for (int i = 1; i < dimensions[0] - 1; i = i + 2) {
 			for (int j = 1; j < dimensions[1] - 1; j = j + 2) {
@@ -77,7 +98,7 @@ public class ImageProcessor {
 				hsl = RGBtoHSL(rgb);
 				hit = 0;
 				//System.out.println(hsl[0]);
-				if (hsl[0] < upper && hsl[0] > lower && hsl[1] > 0.8) {
+				if (hsl[0] < upper && hsl[0] > lower && hsl[1] > 0.8 && hsl[2] > 0.2) {
 					for (int a = 0; a < 3; ++a) {
 						for (int b = 0; b < 3; ++b) {
 							rgb = image.getRGB(i+a-1,j+b-1);
@@ -109,8 +130,11 @@ public class ImageProcessor {
 		return intCoord;
 	}
 	
-	public double[] RGBtoHSL(int rgb) {
-		int max,min;
+	public float[] RGBtoHSL(int rgb) {
+		float[] hsb = new float[3];
+		Colors.calculateHSB(rgb, hsb);
+		return hsb;
+		/*int max,min;
 		double r,g,b, h,s,l;
 		double[] RGB = new double[3];
 		r = ((rgb&0x00FF0000)>>16) / 255.0;
@@ -171,11 +195,6 @@ public class ImageProcessor {
 		else {
 			h = 4.0 + (RGB[0] - RGB[1]) / (RGB[max] - RGB[min]);
 		}
-		return new double[] {h,s,l};
+		return new double[] {h,s,l};*/
 	}
-	
-	public static void toggleFlip() {
-		flip = !flip;
-	}
-
 }
