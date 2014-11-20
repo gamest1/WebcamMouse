@@ -1,5 +1,6 @@
 package core;
 
+import gui.GUI;
 import debug.*;
 
 import javax.swing.JFrame;
@@ -16,10 +17,14 @@ public class WebcamMouse {
 	public static void main (String[] args) {
 		
 		CameraHandler handler = CameraHandler.getInstance();
+		handler.start();
+		GUI gui = GUI.getInstance();
+		
+		/*CameraHandler handler = CameraHandler.getInstance();
 		FramePainter painter = FramePainter.getInstance();
 		handler.start();
 		Thread t1 = new Thread(painter);
-		t1.start();
+		t1.start();*/
 		/*Camera camera = Camera.getInstance();
 		Webcam webcam = camera.getWebcam();
 		WebcamPanel panel = new WebcamPanel(webcam);
@@ -29,13 +34,13 @@ public class WebcamMouse {
 		panel.setMirrored(true);*/
 		
 		
-		JFrame window = new JFrame("Test webcam panel");
+		/*JFrame window = new JFrame("Test webcam panel");
 		window.add(painter);
 		//window.add(panel);
 		window.setResizable(true);
 		window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		window.pack();
-		window.setVisible(true);
+		window.setVisible(true);*/
 	}
 
 }

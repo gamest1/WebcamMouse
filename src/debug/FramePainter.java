@@ -9,12 +9,13 @@ import java.awt.Graphics;
 
 public class FramePainter extends JPanel implements Runnable {
 	private static FramePainter instance = null;
-	private static final int WIDTH = 512;
-	private static final int HEIGHT = 512;
+	private static int WIDTH = 512;
+	private static int HEIGHT = 512;
 	private static int numPixels;
 	FrameBuffer buffer = null;
 	JPanel panel = null;
 	Frame frame = null;
+	private static boolean active = false;
 	
 	private FramePainter() {
 		numPixels = WIDTH * HEIGHT;
@@ -30,7 +31,7 @@ public class FramePainter extends JPanel implements Runnable {
 	}
 	
 	public void run() {
-		while (true) {
+		while (active) {
 			while (!buffer.hasNext()) {
 				try {
 					Thread.sleep(20);
@@ -49,13 +50,18 @@ public class FramePainter extends JPanel implements Runnable {
 			return;
 		}
 		super.paintComponent(g);
+		BufferedImage img = frame.getImage();
+		WIDTH = img.getWidth();
+		HEIGHT = img.getHeight();
+		numPixels = WIDTH*HEIGHT;
+		g.drawImage(img,0,0,WIDTH,HEIGHT,null);
 		double[][] coord = frame.getCoords();
 		double[] size = frame.getSizes();
 		int r;
 		int x, y;
-		g.setColor(Color.WHITE);
-		g.fillRect(0, 0, WIDTH, HEIGHT);
-		g.setColor(Color.BLACK);
+		//g.setColor(Color.WHITE);
+		//g.fillRect(0, 0, WIDTH, HEIGHT);
+		g.setColor(Color.RED);
 		for (int i = 0; i < 3; ++i) {
 			r = (int)Math.sqrt((size[i] * numPixels)/Math.PI);
 			x = (int)(coord[i][0] * WIDTH);
@@ -70,5 +76,9 @@ public class FramePainter extends JPanel implements Runnable {
 	
 	public JPanel getPanel() {
 		return panel;
+	}
+	
+	public static void setActive(boolean set) {
+		active = set;
 	}
 }

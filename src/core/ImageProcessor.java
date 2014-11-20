@@ -9,7 +9,7 @@ public class ImageProcessor {
 	double[][] coord = null;
 	double[] size = null;
 	static boolean flip = false;
-	static Frame lastFrame = new Frame(new double[][]{{0.5,0.5,0.5},{0.5,0.5,0.5},{0.5,0.5,0.5}},new double[]{0,0,0},0); // default frame, all dots centered, no size, timestamp is 0
+	static Frame lastFrame = new Frame(new double[][]{{0.5,0.5,0.5},{0.5,0.5,0.5},{0.5,0.5,0.5}},new double[]{0,0,0},0, new BufferedImage(50,50,BufferedImage.TYPE_INT_RGB)); // default frame, all dots centered, no size, timestamp is 0
 	
 	public ImageProcessor() {
 		image = Camera.getInstance().getImage();
@@ -22,7 +22,7 @@ public class ImageProcessor {
 		coord = new double[3][2];
 		size = new double[3];
 		getFrameData();
-		lastFrame = new Frame(coord, size, timestamp); // update lastFrame
+		lastFrame = new Frame(coord, size, timestamp, image); // update lastFrame
 		buffer.add(lastFrame);
 	}
 	
