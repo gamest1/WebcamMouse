@@ -9,6 +9,8 @@ import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamPanel;
 import com.github.sarxos.webcam.ds.ipcam.*;
 
+import java.awt.Color;
+
 
 public class WebcamMouse {
 	static {
@@ -16,6 +18,7 @@ public class WebcamMouse {
 	}
 	public static void main (String[] args) {
 		
+		Colors.init();
 		CameraHandler handler = CameraHandler.getInstance();
 		handler.start();
 		GUI gui = GUI.getInstance();

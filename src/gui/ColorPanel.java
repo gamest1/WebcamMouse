@@ -25,10 +25,10 @@ public class ColorPanel extends JPanel {
 	
 	protected void paintComponent(Graphics g) {
 		int x, y;
-		g.setColor(new Color(210,210,210));
+		g.setColor(new Color(220,220,220));
 		g.fillRect(0, 0, DIAMETER*5, DIAMETER);
 		for (int i = 0; i < 3; ++i) {
-			g.setColor(new Color(Colors.getInstance().getRGB(i)));
+			g.setColor(new Color(Colors.getRGB(i)));
 			x = i*2*DIAMETER;
 			y = 0;
 			g.fillOval(x, y, DIAMETER, DIAMETER);

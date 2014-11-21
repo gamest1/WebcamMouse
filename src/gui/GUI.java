@@ -124,7 +124,7 @@ public class GUI extends JFrame implements ActionListener {
 		rgb[0] /=25;
 		rgb[1] /=25;
 		rgb[2] /=25;
-		Colors.getInstance().setRGB(rgb[0], rgb[1], rgb[2], k);
+		Colors.setRGB(rgb[0], rgb[1], rgb[2], k);
 	}
 	
 	private void buttonPaneSetup() {

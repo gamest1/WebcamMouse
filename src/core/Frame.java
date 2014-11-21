@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage;
 public class Frame {
 	private double[][] COORD = new double[3][2];		// normalized to 0 <= x <= 1; dim1: red,green,blue; dim2: x,y
 	private double[] SIZE = new double[3];				// area as a fraction of image; dim1: red,green,blue
+	private double[] CENTER = {0, 0};			// center of the 3 coordinates
 	private long TIMESTAMP = 0;
 	private BufferedImage image = null;
 
@@ -20,8 +21,11 @@ public class Frame {
 			SIZE[i] = size[i];
 			for (int j = 0; j < 2; ++j) {
 				COORD[i][j] = coord[i][j];
+				CENTER[j] += coord[i][j];
 			}
 		}
+		CENTER[0] /= 3;
+		CENTER[1] /= 3;
 	}
 	
 	public double[][] getCoords() {
@@ -44,5 +48,9 @@ public class Frame {
 	
 	public BufferedImage getImage() {
 		return image;
+	}
+	
+	public double[] getCenter() {
+		return CENTER;
 	}
 }
