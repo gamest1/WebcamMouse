@@ -10,7 +10,8 @@ import java.awt.image.Kernel;
 
 
 public class ImageProcessor {
-	private static final int minPixels = 144;
+	private static final int minPixels = 64;
+	private static final int kernel = 4;
 	BufferedImage image = null;
 	private double[][] coord = null;
 	private double[] size = null;
@@ -89,6 +90,11 @@ public class ImageProcessor {
 	private int[][] extractCoords() {
 		int[] dimensions = {image.getWidth(),image.getHeight()};
 		int[][] intCoord = new int[3][3];			//[1..3] -> red,green,blue | [][0] - x, [][1] - y, [][2] - size in total number of pixels of the blob
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 3; ++j) {
+				intCoord[i][j] = -1;
+			}
+		}
 		
 		// algorithm to figure out values for intCoord and sizePixels below
 		// can use lastFrame to draw upon information of the last Frame to make calculations more efficient
@@ -106,10 +112,9 @@ public class ImageProcessor {
 		
 		boolean[] found = {false, false, false};
 		boolean done = false;
-		int rgb;
 		int bound, x, y;
-		int maxI = Math.max(dimensions[0], dimensions[1])/4 + 4;
-		int[] quarterDim = {dimensions[0]/4, dimensions[1]/4};
+		int maxI = Math.max(dimensions[0], dimensions[1])/(kernel * 2) + (kernel * 2);
+		int[] quarterDim = {dimensions[0]/(kernel * 2), dimensions[1]/(kernel * 2)};
 		for (int i = 0; i < maxI && !done; ++i) {
 			for (int j = -1; j <= 1; j = j + 2) {
 				//System.out.println();
@@ -117,16 +122,16 @@ public class ImageProcessor {
 					bound = (Math.min(i, quarterDim[1]));
 					for (int k = -bound; k <= bound; ++k) {
 						//System.out.println(k);
-						x = (oldCenter[0] + j*i*2 + dimensions[0])%dimensions[0];
-						y = (oldCenter[1] + k*2 + dimensions[1])%dimensions[1];
+						x = (oldCenter[0] + j*i*kernel + dimensions[0])%dimensions[0];
+						y = (oldCenter[1] + k*kernel + dimensions[1])%dimensions[1];
 						checkPixel(x, y, found, intCoord);
 					}
 				}
-				if (i < quarterDim[1] + 4) {
+				if (i < quarterDim[1] + 1) {
 					bound = (Math.min(i, quarterDim[0]));
 					for (int k = -bound; k <= bound; ++k) {
-						x = (oldCenter[0] + k*2 + dimensions[0])%dimensions[0];
-						y = (oldCenter[1] + j*i*2 + dimensions[1])%dimensions[1];
+						x = (oldCenter[0] + k*kernel + dimensions[0])%dimensions[0];
+						y = (oldCenter[1] + j*i*kernel + dimensions[1])%dimensions[1];
 						checkPixel(x, y, found, intCoord);
 					}
 				}

@@ -5,10 +5,11 @@ import javax.swing.*;
 import core.Camera;
 import core.Colors;
 import core.ImageProcessor;
-import debug.FramePainter;
 
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 
@@ -20,9 +21,29 @@ public class GUI extends JFrame implements ActionListener {
 	private JPanel colorsPane = null;
 	private JPanel debugPane = null;
 	private FramePainter painter = null;
+	private MouseHandler mouse = null;
 	private ColorPanel colorPane = null;
 	private Thread t1 = null;
-	
+    
+    private class MyDispatcher implements KeyEventDispatcher {
+        @Override
+        public boolean dispatchKeyEvent(KeyEvent e) {
+            if (e.getID() == KeyEvent.KEY_PRESSED) {
+            	// key pressed
+            } else if (e.getID() == KeyEvent.KEY_RELEASED) {
+                // key released
+            	//System.out.println(e.getKeyCode());
+            	if (e.getKeyCode() == KeyEvent.VK_ESCAPE){
+                	removePainter();
+                	removeMouseHandler();
+            	}
+            } else if (e.getID() == KeyEvent.KEY_TYPED) {
+                // key typed
+            }
+            return false;
+        }
+    }
+    
 	private GUI() {
 		super("WebcamMouse");
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -31,6 +52,8 @@ public class GUI extends JFrame implements ActionListener {
 		this.add(mainPane);
 		this.pack();
 		this.setVisible(true);
+		KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+        manager.addKeyEventDispatcher(new MyDispatcher());
 	}
 	
 	private void mainPaneSetup() {
@@ -77,6 +100,24 @@ public class GUI extends JFrame implements ActionListener {
 		this.pack();
 		this.setVisible(true);
 		painter = null;
+	}
+	
+	private void addMouseHandler() {
+		mouse = MouseHandler.getInstance();
+		mouse.setActive(true);
+		Thread t1 = new Thread(mouse);
+		t1.start();
+	}
+	
+	private void removeMouseHandler() {
+		if (t1 != null) {
+			t1 = null;;
+		}
+		if (mouse == null) {
+			return;
+		}
+		mouse.setActive(false);
+		mouse = null;
 	}
 	
 	private void calibrate() {
@@ -169,13 +210,16 @@ public class GUI extends JFrame implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		if ("calibrate".equals(e.getActionCommand())) {
 			removePainter();
+			removeMouseHandler();
 			calibrate();
 		}
 		else if ("debug".equals(e.getActionCommand())) {
+			removeMouseHandler();
 			addPainter();
 		}
 		else if ("normal".equals(e.getActionCommand())) {
 			removePainter();
+			addMouseHandler();
 		}
 		else if ("flip".equals(e.getActionCommand())) {
 			flipImage();

@@ -1,7 +1,6 @@
 package core;
 
 import gui.GUI;
-import debug.*;
 
 import javax.swing.JFrame;
 
@@ -22,28 +21,55 @@ public class WebcamMouse {
 		CameraHandler handler = CameraHandler.getInstance();
 		handler.start();
 		GUI gui = GUI.getInstance();
+
 		
-		/*CameraHandler handler = CameraHandler.getInstance();
-		FramePainter painter = FramePainter.getInstance();
-		handler.start();
-		Thread t1 = new Thread(painter);
-		t1.start();*/
-		/*Camera camera = Camera.getInstance();
-		Webcam webcam = camera.getWebcam();
-		WebcamPanel panel = new WebcamPanel(webcam);
-		panel.setFPSDisplayed(true);
-		panel.setDisplayDebugInfo(true);
-		panel.setImageSizeDisplayed(true);
-		panel.setMirrored(true);*/
+		/*int[] dimensions = {32, 128};
+		int[] center = {16,64};
+		String[][] str = new String[dimensions[0]][dimensions[1]];
+		for (int i = 0; i < dimensions[0]; ++i) {
+			for (int j = 0; j < dimensions[1]; ++j) {
+				str[i][j] = "#";
+			}
+		}
+		int kernel = 4;
+		int bound, x, y;
+		int maxI = Math.max(dimensions[0], dimensions[1])/(kernel * 2) + (kernel * 2);
+		int[] quarterDim = {dimensions[0]/(kernel * 2), dimensions[1]/(kernel * 2)};
+		for (int i = 0; i < maxI; ++i) {
+			for (int j = -1; j <= 1; j = j + 2) {
+				//System.out.println();
+				if (i < quarterDim[0] + 1) {
+					bound = (Math.min(i, quarterDim[1]));
+					for (int k = -bound; k <= bound; ++k) {
+						//System.out.println(k);
+						x = (center[0] + j*i*kernel + kernel * dimensions[0])%dimensions[0];
+						y = (center[1] + k*kernel + kernel * dimensions[1])%dimensions[1];
+						str[x][y] = " ";
+						print(str);
+					}
+				}
+				if (i < quarterDim[1] + 1) {
+					bound = (Math.min(i, quarterDim[0]));
+					for (int k = -bound; k <= bound; ++k) {
+						x = (center[0] + k*kernel + kernel * dimensions[0])%dimensions[0];
+						y = (center[1] + j*i*kernel + kernel * dimensions[1])%dimensions[1];
+						str[x][y] = " ";
+						print(str);
+					}
+				}
+			}
+		}*/
 		
-		
-		/*JFrame window = new JFrame("Test webcam panel");
-		window.add(painter);
-		//window.add(panel);
-		window.setResizable(true);
-		window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		window.pack();
-		window.setVisible(true);*/
+	}
+	
+	public static void print(String[][] str) {
+		for (int i = 0; i < str.length; ++i) {
+			for (int j = 0; j < str[0].length; ++j) {
+				System.out.print(str[i][j]);
+			}
+			System.out.println();
+		}
+		System.out.println();
 	}
 
 }
