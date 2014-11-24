@@ -10,15 +10,17 @@ public class Frame {
 	private boolean valid = false;						// if none of the fingers was found, then the frame is invalid
 	private long TIMESTAMP = 0;
 	private BufferedImage image = null;
+	private BufferedImage debugImage = null;
 
 	
 	private Frame() {
 		
 	}
 	
-	public Frame(double[][] coord, double[] size, long timestamp, BufferedImage img) {
+	public Frame(double[][] coord, double[] size, long timestamp, BufferedImage img, BufferedImage debug) {
 		TIMESTAMP = timestamp;
 		image = img;
+		debugImage = debug;
 		int counter = 0;
 		for (int i = 0; i < 3; ++i) {
 			SIZE[i] = size[i];
@@ -63,6 +65,10 @@ public class Frame {
 			out[i] = SIZE[i];
 		}
 		return out;
+	}
+	
+	public BufferedImage getDebugImage() {
+		return debugImage;
 	}
 	
 	public BufferedImage getImage() {

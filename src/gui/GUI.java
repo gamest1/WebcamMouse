@@ -127,11 +127,11 @@ public class GUI extends JFrame implements ActionListener {
 		Thread t1 = new Thread(painter);
 		t1.start();
 		
-		calibrationDialog("Please move the color of the Index Finger into the center of the circle");
+		calibrationDialog("Please move the color of the Thumb into the center of the circle");
 		calibrateColor(0);
-		calibrationDialog("Please move the color of the Middle Finger into the center of the circle");
+		calibrationDialog("Please move the color of the Index Finger into the center of the circle");
 		calibrateColor(1);
-		calibrationDialog("Please move the color of the Ring Finger into the center of the circle");
+		calibrationDialog("Please move the color of the Middle Finger into the center of the circle");
 		calibrateColor(2);
 		
 		colorPane.repaint();

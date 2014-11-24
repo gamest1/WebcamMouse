@@ -10,24 +10,30 @@ import java.awt.image.Kernel;
 
 
 public class ImageProcessor {
-	private static final int minPixels = 64;
-	private static final int kernel = 4;
+	private static final int minPixels = 121;
+	private static final int kernel = 2;		// powers of two
+	private static final int numSamples = 8;
+	private static final int numSamples2 = numSamples*numSamples;
+	private static final int numSamples3 = numSamples2*numSamples;
+	private static final int maxGap = 2;
 	BufferedImage image = null;
+	BufferedImage debugImage = null;
 	private double[][] coord = null;
 	private double[] size = null;
-	static Frame lastFrame = new Frame(new double[][]{{0.5,0.5,0.5},{0.5,0.5,0.5},{0.5,0.5,0.5}},new double[]{0,0,0},0, new BufferedImage(50,50,BufferedImage.TYPE_INT_RGB)); // default frame, all dots centered, no size, timestamp is 0
+	static Frame lastFrame = new Frame(new double[][]{{0.5,0.5,0.5},{0.5,0.5,0.5},{0.5,0.5,0.5}},new double[]{0,0,0}, 0, Camera.getInstance().getImage(), Camera.getInstance().getImage()); // default frame, all dots centered, no size, timestamp is 0
 	
 	private float[][] colors = null;
 	
 	public ImageProcessor() {
 		image = Camera.getInstance().getImage();
+		int w = image.getWidth();
+		int h = image.getHeight();
+		debugImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
 		if (image == null) {
 			System.out.println("No image in Image Processor, why?");
 			System.exit(1);
 		}
 		if (Camera.getInstance().getFlip()) {
-			int w = image.getWidth();
-			int h = image.getHeight();
 			BufferedImage copy = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
 			Graphics g = copy.getGraphics(); 
 			int sx1, sx2, sy1, sy2; // source rectangle coordinates
@@ -47,13 +53,15 @@ public class ImageProcessor {
 		}
 		filterImage();
 		setUpColors();
+		Graphics g = debugImage.getGraphics();
+		g.drawImage(image, 0, 0, w, h, 0, 0, w, h, null);
 		
 		FrameBuffer buffer = FrameBuffer.getInstance();
 		long timestamp = System.nanoTime();
 		coord = new double[3][2];
 		size = new double[3];
 		getFrameData();
-		lastFrame = new Frame(coord, size, timestamp, image); // update lastFrame
+		lastFrame = new Frame(coord, size, timestamp, image, debugImage); // update lastFrame
 		buffer.add(lastFrame);
 	}
 	
@@ -89,10 +97,17 @@ public class ImageProcessor {
 	
 	private int[][] extractCoords() {
 		int[] dimensions = {image.getWidth(),image.getHeight()};
-		int[][] intCoord = new int[3][3];			//[1..3] -> red,green,blue | [][0] - x, [][1] - y, [][2] - size in total number of pixels of the blob
-		for (int i = 0; i < 3; ++i) {
+		int[][] intCoord = new int[3][3];						// [1..3] -> red,green,blue | [][0] - x, [][1] - y, [][2] - size in total number of pixels of the blob
+		int[][][] intCoordArr = new int[3][3][numSamples];		// array of coordinates, for first numSamples blobs found.
+		/*for (int i = 0; i < 3; ++i) {
 			for (int j = 0; j < 3; ++j) {
 				intCoord[i][j] = -1;
+			}
+		}*/
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 3; ++j) {
+				for (int k = 0; k < numSamples; ++k)
+				intCoordArr[i][j][k] = -1000;
 			}
 		}
 		
@@ -106,7 +121,7 @@ public class ImageProcessor {
 		double[] tmpCenter = lastFrame.getCenter();
 		oldCenter[0] = (int)(tmpCenter[0] * dimensions[0]);
 		oldCenter[1] = (int)(tmpCenter[1] * dimensions[1]);
-		Graphics g = image.getGraphics();
+		Graphics g = debugImage.getGraphics();
 		g.setColor(Color.cyan);
 		g.fillOval(oldCenter[0] - 10, oldCenter[1] - 10, 20 , 20);
 		
@@ -124,7 +139,7 @@ public class ImageProcessor {
 						//System.out.println(k);
 						x = (oldCenter[0] + j*i*kernel + dimensions[0])%dimensions[0];
 						y = (oldCenter[1] + k*kernel + dimensions[1])%dimensions[1];
-						checkPixel(x, y, found, intCoord);
+						checkPixel(x, y, found, intCoordArr);
 					}
 				}
 				if (i < quarterDim[1] + 1) {
@@ -132,11 +147,79 @@ public class ImageProcessor {
 					for (int k = -bound; k <= bound; ++k) {
 						x = (oldCenter[0] + k*kernel + dimensions[0])%dimensions[0];
 						y = (oldCenter[1] + j*i*kernel + dimensions[1])%dimensions[1];
-						checkPixel(x, y, found, intCoord);
+						checkPixel(x, y, found, intCoordArr);
 					}
 				}
 			}
 			done = found[0] && found[1] && found[2];
+		}
+		
+		int[] tmpDist = new int[3];
+		int[][] dist = new int[numSamples3][4];
+		int[] index = new int[3];
+		int distx, disty, tmp;
+		int[] center = new int[2];
+		for (int i = 0; i < numSamples; ++i) {
+			for (int j = 0; j < numSamples; ++j) {
+				for (int k = 0; k < numSamples; ++k) {
+					index[0] = i;
+					index[1] = j;
+					index[2] = k;
+					if (intCoordArr[0][0][index[0]] < 0 || intCoordArr[1][0][index[1]] < 0|| intCoordArr[2][0][index[2]] < 0) {
+						dist[i*numSamples2+j*numSamples+k][0] = i;
+						dist[i*numSamples2+j*numSamples+k][1] = j;
+						dist[i*numSamples2+j*numSamples+k][2] = k;
+						dist[i*numSamples2+j*numSamples+k][3] = 100000000;
+						continue;
+					}
+					center[0] = 0;
+					center[1] = 0;
+					for (int m = 0; m < 3; ++m) {
+						center[0] += intCoordArr[m][0][index[m]];
+						center[1] += intCoordArr[m][1][index[m]];
+					}
+					center[0] /= 3;
+					center[1] /= 3;
+					for (int m = 0; m < 3; ++m) {
+						distx = intCoordArr[m][0][index[m]] - center[0];
+						disty = intCoordArr[m][1][index[m]] - center[1];
+						tmpDist[m] = distx * distx + disty * disty;
+					}
+					// check if one of the circles is inside another and if yes, increase distances by a lot so they don't get considered
+					for (int a = 0; a < 3; ++a) { 
+						for (int b = 1; b < 3; ++b) {
+							distx = intCoordArr[a][0][index[a]] - intCoordArr[b][0][index[b]];
+							disty = intCoordArr[a][1][index[a]] - intCoordArr[b][0][index[b]];
+							tmp = distx * distx + disty * disty;
+							if (tmp < intCoordArr[a][2][index[a]]/Math.PI || tmp < intCoordArr[b][2][index[b]]/Math.PI) {
+								tmpDist[0] = 100000;
+								tmpDist[1] = 100000;
+								tmpDist[2] = 100000;
+							}
+						}
+					}
+					dist[i*numSamples2+j*numSamples+k][0] = i;
+					dist[i*numSamples2+j*numSamples+k][1] = j;
+					dist[i*numSamples2+j*numSamples+k][2] = k;
+					dist[i*numSamples2+j*numSamples+k][3] = tmpDist[0] + tmpDist[1] + tmpDist[2];
+				}
+			}
+		}
+		
+		int min = 0;
+		for (int i = 1; i < numSamples3; ++i) {
+			if (dist[i][3] < dist[min][3]) {
+				min = i;
+			}
+		}
+		
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 3; ++j) {
+				intCoord[i][j] = intCoordArr[i][j][dist[min][i]];
+			}
+			Graphics gl = image.getGraphics();
+			gl.setColor(Color.white);
+			gl.fillOval(intCoord[i][0]-20, intCoord[i][1]-20, 40, 40);
 		}
 		
 		// end of algorithm, return values
@@ -144,25 +227,68 @@ public class ImageProcessor {
 		return intCoord;
 	}
 	
-	private void checkPixel(int x, int y, boolean[] found, int[][] coord) {
+	private void checkPixel(int x, int y, boolean[] found, int[][][] coord) {
+		int oldrgb = lastFrame.getImage().getRGB(x, y);
 		int rgb = image.getRGB(x, y);
+		if (!Colors.verifyDifference(rgb, oldrgb)) {
+			/*Graphics g = debugImage.getGraphics();
+			g.setColor(Color.black);
+			g.drawLine(x,y,x,y);*/
+			return;
+		}
+		
+		if (oldrgb != Color.white.getRGB()) {
+			Graphics gl = lastFrame.getImage().getGraphics();
+			gl.setColor(Color.white);
+			gl.fillOval(x-10, y-10, 20, 20);
+		}
+		
+		int index = -1;
 		float[] hsb = new float[3];
 		Colors.calculateHSB(rgb, hsb);
 		if (hsb[2] < 0.05 || hsb[2] > 0.95 || hsb[1] < 0.1) return;
 		int[] limits = new int[4];
 		int tmpCount;
-		for (int i = 0; i < 3; ++i) {
-			if (found[i]) continue;
-			if (Colors.verifyColor(hsb, i)) {
-				tmpCount = searchArea(x, y, i, limits);
-				if (tmpCount < minPixels) continue;
-				//System.out.println(tmpCount + " | " + limits[0][0] + " | " + limits[0][1] + " | " + limits[1][0] + " | " + limits[1][1]);
-				coord[i][0] = (limits[0] + limits[1])/2;
-				coord[i][1] = (limits[2] + limits[3])/2;
-				coord[i][2] = tmpCount;
-				found[i] = true;
+		int dist;
+		int i = Colors.getClosestColor(hsb);
+		if (i < 0 || found[i]) return;
+		boolean tooClose = false;
+		for (int j = 0; j < numSamples; ++j) {
+			if (coord[i][0][j] < 0) {
+				index = j;
+				break;
+			}
+			else {
+				dist = (x - coord[i][0][j]) * (x - coord[i][0][j]) + (y - coord[i][1][j]) * (y - coord[i][1][j]) - coord[i][2][j]*3;
+				if (dist < 0) {
+					//System.out.println(x + " | " + y + " | " + coord[i][0][j] + " | " + coord[i][1][j] + " | " + coord[i][2][j]);
+					tooClose = true;
+					Graphics g = debugImage.getGraphics();
+					g.setColor(Color.yellow);
+					g.drawLine(x,y,x,y);
+				}
 			}
 		}
+		if (tooClose) {
+			return;
+		}
+		if (index < 0) {
+			found[i] = true;
+			return;
+		}
+		tmpCount = searchArea(x, y, i, limits);
+		if (tmpCount < minPixels) return;
+		
+		Graphics g = debugImage.getGraphics();
+		g.setColor(Color.magenta);
+		g.fillRect(x-2,y-2,4,4);
+		//g.fillRect(x-(int)(Math.sqrt(tmpCount)*0.5),y-(int)(Math.sqrt(tmpCount)*0.5),(int)Math.sqrt(tmpCount),(int)Math.sqrt(tmpCount));
+		
+		//System.out.println(tmpCount + " | " + limits[0][0] + " | " + limits[0][1] + " | " + limits[1][0] + " | " + limits[1][1]);
+		coord[i][0][index] = (limits[0] + limits[1])/2;
+		coord[i][1][index] = (limits[2] + limits[3])/2;
+		coord[i][2][index] = tmpCount;
+		//found[i] = true;
 	}
 	
 	private int searchArea(int m, int n, int h, int[] limits) {
@@ -198,7 +324,7 @@ public class ImageProcessor {
 				reachedLimit[3] = 10;
 			}
 			for (int i = 0; i < 4; ++i) {
-				if (reachedLimit[i] >= 5) {
+				if (reachedLimit[i] >= maxGap) {
 					continue;
 				}
 				if (i%2 == 0) {
@@ -229,10 +355,11 @@ public class ImageProcessor {
 					rgb = image.getRGB(x, y);
 					Colors.calculateHSB(rgb, hsb);
 					if (hsb[2] < 0.05 || hsb[2] > 0.95 || hsb[1] < 0.1) continue;
-					if (Colors.verifyColor(hsb, h)) {
+					//if (Colors.verifyColorWide(hsb, h)) {
+					if (Colors.getClosestColorWide(hsb) == h) {
 						++tmpCount;
-						Graphics g = image.getGraphics();
-						g.setColor(Color.yellow);
+						Graphics g = debugImage.getGraphics();
+						g.setColor(new Color(Colors.getRGB(h)));
 						g.drawLine(x,y,x,y);
 					}
 				}
@@ -244,7 +371,7 @@ public class ImageProcessor {
 				}
 				count += tmpCount;
 			}
-			done = reachedLimit[0] >= 5 && reachedLimit[1] >= 5 && reachedLimit[2] >= 5 && reachedLimit[3] >= 5;
+			done = reachedLimit[0] >= maxGap && reachedLimit[1] >= maxGap && reachedLimit[2] >= maxGap && reachedLimit[3] >= maxGap;
 		}
 		return count;
 	}

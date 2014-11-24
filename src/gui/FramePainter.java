@@ -60,7 +60,7 @@ public class FramePainter extends JPanel implements Runnable {
 	}
 	
 	private void paintFrames(Graphics g) {
-		BufferedImage img = frame.getImage();
+		BufferedImage img = frame.getDebugImage();
 		WIDTH = img.getWidth();
 		HEIGHT = img.getHeight();
 		int numPixels = WIDTH*HEIGHT;
@@ -87,7 +87,7 @@ public class FramePainter extends JPanel implements Runnable {
 	}
 	
 	private void paintCalibration(Graphics g) {
-		BufferedImage img = frame.getImage();
+		BufferedImage img = frame.getDebugImage();
 		WIDTH = img.getWidth();
 		HEIGHT = img.getHeight();
 		g.drawImage(img,0,0,WIDTH,HEIGHT,null);
