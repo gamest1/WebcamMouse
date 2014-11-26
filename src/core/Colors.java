@@ -6,15 +6,14 @@ public class Colors {
 	private static int rgb[] = new int[3];
 	private static float hsb[][] = new float[3][3];
 	
-	private static final float HueRange = 0.06f;
-	private static final float SatRange = 0.12f;
-	private static final float BrightnessRange = 0.15f;
+	private static final float HueRange = 0.03f;
+	private static final float SatRange = 0.10f;
+	private static final float BrightnessRange = 0.25f;
 	
-	private static final float HueRangeWide = 0.10f;
-	private static final float SatRangeWide = 0.20f;
-	private static final float BrightnessRangeWide = 0.25f;
+	private static final float HueRangeWide = 0.25f;
+	private static final float SatRangeWide = 1.40f;
+	private static final float BrightnessRangeWide = 1.45f;
 	
-	private static final int differenceThreshold = 100;
 	
 	private Colors() {
 	}
@@ -180,7 +179,7 @@ public class Colors {
 		return true;
 	}
 	
-	public static boolean verifyDifference(int rgb1, int rgb2) {
+	public static boolean verifyDifference(int rgb1, int rgb2, int differenceThreshold) {
 		int r1, r2, g1, g2, b1, b2;
 		r1 = (rgb1&0x00FF0000)>>16;
 		r2 = (rgb2&0x00FF0000)>>16;
@@ -197,6 +196,32 @@ public class Colors {
 		else {
 			return false;
 		}
+
+		/*float[] hsbColor1 = new float[3];
+		calculateHSB(rgb1, hsbColor1);
+		float[] hsbColor2 = new float[3];
+		calculateHSB(rgb2, hsbColor2);
+		
+		if (Math.abs(hsbColor1[2] - hsbColor2[2]) > 0.1) {
+			return true;
+		}
+		if (Math.abs(hsbColor1[1] - hsbColor2[1]) > 0.1) {
+			//return true;
+		}
+		float hueDiff = (hsbColor1[0] - hsbColor2[0] + 0.5f);
+		if (hueDiff < 0.0f) {
+			hueDiff += 0.5f;
+		}
+		else if (hueDiff > 1.0f) {
+			hueDiff -= 1.5f;
+		}
+		else {
+			hueDiff -= 0.5f;
+		}
+		if (Math.abs(hueDiff) > 0.1) {
+			//return true;
+		}
+		return false;*/
 		
 	}
 	
@@ -214,6 +239,27 @@ public class Colors {
 		for (int i = 0; i < 3; ++i) {
 			rgb[i] = Color.getHSBColor(hsb[i][0], hsb[i][1], hsb[i][2]).getRGB();
 		}
+	}
+	
+	public static double getColorDifference(int rgb, int i) {
+		float[] hsbColor = new float[3];
+		calculateHSB(rgb, hsbColor);
+		double out = 0;
+		out += Math.abs(hsbColor[2] - hsb[i][2]);
+		out += Math.abs(hsbColor[1] - hsb[i][1]);
+		
+		float hueDiff = (hsbColor[0] - hsb[i][0] + 0.5f);
+		if (hueDiff < 0.0f) {
+			hueDiff += 0.5f;
+		}
+		else if (hueDiff > 1.0f) {
+			hueDiff -= 1.5f;
+		}
+		else {
+			hueDiff -= 0.5f;
+		}
+		out += hueDiff;
+		return out;
 	}
 	
 	public static int[] getRGB() {

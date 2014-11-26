@@ -126,7 +126,9 @@ public class GUI extends JFrame implements ActionListener {
 		painter.setMode(2);
 		Thread t1 = new Thread(painter);
 		t1.start();
-		
+
+		calibrationDialog("Saving background, please make sure that your hand is not in the Picture");
+		calibrateBackground();
 		calibrationDialog("Please move the color of the Thumb into the center of the circle");
 		calibrateColor(0);
 		calibrationDialog("Please move the color of the Index Finger into the center of the circle");
@@ -148,23 +150,27 @@ public class GUI extends JFrame implements ActionListener {
 		JOptionPane.showMessageDialog(null, panel);
 	}
 	
+	private void calibrateBackground() {
+		Camera.getInstance().setBackground();
+	}
+	
 	private void calibrateColor(int k) {
 		BufferedImage image = Camera.getInstance().getImage();
 		int[] rgb = {0, 0, 0};
 		int color;
 		int x = image.getWidth() / 2;
 		int y = image.getHeight() / 2;
-		for (int i = -2; i <= 2; ++i) {
-			for (int j = -2; j <= 2; ++j) {
+		for (int i = -3; i <= 3; ++i) {
+			for (int j = -3; j <= 3; ++j) {
 				color = image.getRGB(x + i, y + j);
 				rgb[0] += (color&0x00FF0000)>>16;
 				rgb[1] += (color&0x0000FF00)>>8;
 				rgb[2] += (color&0x000000FF);
 			}
 		}
-		rgb[0] /=25;
-		rgb[1] /=25;
-		rgb[2] /=25;
+		rgb[0] /=49;
+		rgb[1] /=49;
+		rgb[2] /=49;
 		Colors.setRGB(rgb[0], rgb[1], rgb[2], k);
 	}
 	

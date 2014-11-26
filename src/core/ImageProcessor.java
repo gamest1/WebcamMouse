@@ -11,45 +11,32 @@ import java.awt.image.Kernel;
 
 public class ImageProcessor {
 	private static final int minPixels = 121;
-	private static final int kernel = 2;		// powers of two
-	private static final int numSamples = 8;
+	private static final int kernel = 4;		// powers of two
+	private static final int numSamples = 4;
 	private static final int numSamples2 = numSamples*numSamples;
 	private static final int numSamples3 = numSamples2*numSamples;
-	private static final int maxGap = 2;
+	private static final int maxGap = 5;
+	private static final int motionThresholdHigh = 60;
+	private static final int motionThresholdLow = 30;
 	BufferedImage image = null;
 	BufferedImage debugImage = null;
+	BufferedImage background = null;
 	private double[][] coord = null;
 	private double[] size = null;
-	static Frame lastFrame = new Frame(new double[][]{{0.5,0.5,0.5},{0.5,0.5,0.5},{0.5,0.5,0.5}},new double[]{0,0,0}, 0, Camera.getInstance().getImage(), Camera.getInstance().getImage()); // default frame, all dots centered, no size, timestamp is 0
+	private static Frame lastFrame = new Frame(new double[][]{{0.5,0.5,0.5},{0.5,0.5,0.5},{0.5,0.5,0.5}},new double[]{0,0,0}, 0, Camera.getInstance().getImage(), Camera.getInstance().getImage()); // default frame, all dots centered, no size, timestamp is 0
 	
 	private float[][] colors = null;
 	
 	public ImageProcessor() {
-		image = Camera.getInstance().getImage();
+		Camera camera = Camera.getInstance();
+		image = camera.getImage();
+		background = camera.getBackground();
 		int w = image.getWidth();
 		int h = image.getHeight();
 		debugImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
 		if (image == null) {
 			System.out.println("No image in Image Processor, why?");
 			System.exit(1);
-		}
-		if (Camera.getInstance().getFlip()) {
-			BufferedImage copy = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
-			Graphics g = copy.getGraphics(); 
-			int sx1, sx2, sy1, sy2; // source rectangle coordinates
-			int dx1, dx2, dy1, dy2; // destination rectangle coordinates
-			dx1 = 0;
-			dy1 = 0;
-			dx2 = w;
-			dy2 = h;
-
-			sx1 = w;
-			sy1 = 0;
-			sx2 = 0;
-			sy2 = h;
-			
-			g.drawImage(image, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, null);
-			image = copy;
 		}
 		filterImage();
 		setUpColors();
@@ -66,11 +53,17 @@ public class ImageProcessor {
 	}
 	
 	private void filterImage() {
-		Kernel kernel = new Kernel(3, 3,
+		Kernel kernel = new Kernel(5, 5,
 		new float[] {
+		1f/25f, 1f/25f, 1f/25f, 1f/25f, 1f/25f,
+		1f/25f, 1f/25f, 1f/25f, 1f/25f, 1f/25f,
+		1f/25f, 1f/25f, 1f/25f, 1f/25f, 1f/25f,
+		1f/25f, 1f/25f, 1f/25f, 1f/25f, 1f/25f,
+		1f/25f, 1f/25f, 1f/25f, 1f/25f, 1f/25f});
+		/*new float[] {
 		1f/9f, 1f/9f, 1f/9f,
 		1f/9f, 1f/9f, 1f/9f,
-		1f/9f, 1f/9f, 1f/9f});
+		1f/9f, 1f/9f, 1f/9f});*/
 		BufferedImageOp op = new ConvolveOp(kernel);
 		image = op.filter(image, null);
 	}
@@ -98,7 +91,7 @@ public class ImageProcessor {
 	private int[][] extractCoords() {
 		int[] dimensions = {image.getWidth(),image.getHeight()};
 		int[][] intCoord = new int[3][3];						// [1..3] -> red,green,blue | [][0] - x, [][1] - y, [][2] - size in total number of pixels of the blob
-		int[][][] intCoordArr = new int[3][3][numSamples];		// array of coordinates, for first numSamples blobs found.
+		int[][][] intCoordArr = new int[3][4][numSamples];		// array of coordinates, for first numSamples blobs found.
 		/*for (int i = 0; i < 3; ++i) {
 			for (int j = 0; j < 3; ++j) {
 				intCoord[i][j] = -1;
@@ -106,8 +99,12 @@ public class ImageProcessor {
 		}*/
 		for (int i = 0; i < 3; ++i) {
 			for (int j = 0; j < 3; ++j) {
-				for (int k = 0; k < numSamples; ++k)
-				intCoordArr[i][j][k] = -1000;
+				for (int k = 0; k < numSamples; ++k) {
+					intCoordArr[i][j][k] = -1000;
+				}
+			}
+			for (int k = 0; k < numSamples; ++k) {
+				intCoordArr[i][3][k] = 1000000;
 			}
 		}
 		
@@ -121,6 +118,7 @@ public class ImageProcessor {
 		double[] tmpCenter = lastFrame.getCenter();
 		oldCenter[0] = (int)(tmpCenter[0] * dimensions[0]);
 		oldCenter[1] = (int)(tmpCenter[1] * dimensions[1]);
+		// draw previous center of gravity
 		Graphics g = debugImage.getGraphics();
 		g.setColor(Color.cyan);
 		g.fillOval(oldCenter[0] - 10, oldCenter[1] - 10, 20 , 20);
@@ -154,7 +152,7 @@ public class ImageProcessor {
 			done = found[0] && found[1] && found[2];
 		}
 		
-		int[] tmpDist = new int[3];
+		/*int[] tmpDist = new int[3];
 		int[][] dist = new int[numSamples3][4];
 		int[] index = new int[3];
 		int distx, disty, tmp;
@@ -217,9 +215,23 @@ public class ImageProcessor {
 			for (int j = 0; j < 3; ++j) {
 				intCoord[i][j] = intCoordArr[i][j][dist[min][i]];
 			}
-			Graphics gl = image.getGraphics();
-			gl.setColor(Color.white);
-			gl.fillOval(intCoord[i][0]-20, intCoord[i][1]-20, 40, 40);
+		}*/
+		
+		
+		int[] min = {0, 0, 0};
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 1; j < numSamples; ++j) {
+				if (intCoordArr[i][3][min[i]] > intCoordArr[i][3][j]) {
+					min[i] = j;
+				}
+			}
+		}
+		//System.out.println(min[0] + " | " + min[1] + " | " + min[2]);
+		//System.out.println(intCoordArr[0][3][min[0]] + " | " + intCoordArr[1][3][min[1]] + " | " + intCoordArr[2][3][min[2]]);
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 3; ++j) {
+				intCoord[i][j] = intCoordArr[i][j][min[i]];
+			}
 		}
 		
 		// end of algorithm, return values
@@ -228,29 +240,32 @@ public class ImageProcessor {
 	}
 	
 	private void checkPixel(int x, int y, boolean[] found, int[][][] coord) {
-		int oldrgb = lastFrame.getImage().getRGB(x, y);
+		//int oldrgb = lastFrame.getImage().getRGB(x, y);
+		int oldrgb = background.getRGB(x, y);
 		int rgb = image.getRGB(x, y);
-		if (!Colors.verifyDifference(rgb, oldrgb)) {
-			/*Graphics g = debugImage.getGraphics();
+		if (!Colors.verifyDifference(rgb, oldrgb, motionThresholdHigh)) {
+			// draw black dot on background pixel
+			Graphics g = debugImage.getGraphics();
 			g.setColor(Color.black);
-			g.drawLine(x,y,x,y);*/
+			g.drawLine(x,y,x,y);
 			return;
 		}
 		
-		if (oldrgb != Color.white.getRGB()) {
+		/*if (oldrgb != Color.white.getRGB()) {
 			Graphics gl = lastFrame.getImage().getGraphics();
 			gl.setColor(Color.white);
 			gl.fillOval(x-10, y-10, 20, 20);
-		}
+		}*/
 		
 		int index = -1;
-		float[] hsb = new float[3];
-		Colors.calculateHSB(rgb, hsb);
-		if (hsb[2] < 0.05 || hsb[2] > 0.95 || hsb[1] < 0.1) return;
+		//float[] hsb = new float[3];
+		//Colors.calculateHSB(rgb, hsb);
+		//if (hsb[2] < 0.05 || hsb[2] > 0.95 || hsb[1] < 0.1) return;
 		int[] limits = new int[4];
-		int tmpCount;
+		int[] tmpCount;
 		int dist;
-		int i = Colors.getClosestColor(hsb);
+		//int i = Colors.getClosestColor(hsb);
+		int i = checkColorNarrow(x, y);
 		if (i < 0 || found[i]) return;
 		boolean tooClose = false;
 		for (int j = 0; j < numSamples; ++j) {
@@ -261,7 +276,6 @@ public class ImageProcessor {
 			else {
 				dist = (x - coord[i][0][j]) * (x - coord[i][0][j]) + (y - coord[i][1][j]) * (y - coord[i][1][j]) - coord[i][2][j]*3;
 				if (dist < 0) {
-					//System.out.println(x + " | " + y + " | " + coord[i][0][j] + " | " + coord[i][1][j] + " | " + coord[i][2][j]);
 					tooClose = true;
 					Graphics g = debugImage.getGraphics();
 					g.setColor(Color.yellow);
@@ -277,8 +291,8 @@ public class ImageProcessor {
 			return;
 		}
 		tmpCount = searchArea(x, y, i, limits);
-		if (tmpCount < minPixels) return;
-		
+		if (tmpCount[0] < minPixels) return;
+		// draw magenta square for starting pixel of valid blob
 		Graphics g = debugImage.getGraphics();
 		g.setColor(Color.magenta);
 		g.fillRect(x-2,y-2,4,4);
@@ -287,16 +301,17 @@ public class ImageProcessor {
 		//System.out.println(tmpCount + " | " + limits[0][0] + " | " + limits[0][1] + " | " + limits[1][0] + " | " + limits[1][1]);
 		coord[i][0][index] = (limits[0] + limits[1])/2;
 		coord[i][1][index] = (limits[2] + limits[3])/2;
-		coord[i][2][index] = tmpCount;
+		coord[i][2][index] = tmpCount[0];
+		coord[i][3][index] = tmpCount[1];
 		//found[i] = true;
 	}
 	
-	private int searchArea(int m, int n, int h, int[] limits) {
+	private int[] searchArea(int m, int n, int h, int[] limits) {
 		int count = 0;
 		int tmpCount;
-
+		double colorDifference = 0;
+		double tmpDifference;
 		int rgb;
-		float[] hsb = new float[3];
 		//int[] oldCenter = {m, n};
 		//int[] dimensions = {1, 1};
 		limits[0] = m;		// left
@@ -342,6 +357,7 @@ public class ImageProcessor {
 					borders[1] = limits[1];
 				}
 				tmpCount = 0;
+				tmpDifference = 0;
 				for (int j = borders[0]; j <= borders[1]; ++j) {
 					if (i < 2) {
 						x = limits[i];
@@ -352,15 +368,12 @@ public class ImageProcessor {
 						y = limits[i];
 					}
 					//System.out.println(x + " | " + y);
-					rgb = image.getRGB(x, y);
-					Colors.calculateHSB(rgb, hsb);
-					if (hsb[2] < 0.05 || hsb[2] > 0.95 || hsb[1] < 0.1) continue;
+					//rgb = image.getRGB(x, y);
 					//if (Colors.verifyColorWide(hsb, h)) {
-					if (Colors.getClosestColorWide(hsb) == h) {
+					if (checkColorWide(x, y, h)) {
+						rgb = image.getRGB(x, y);
 						++tmpCount;
-						Graphics g = debugImage.getGraphics();
-						g.setColor(new Color(Colors.getRGB(h)));
-						g.drawLine(x,y,x,y);
+						tmpDifference += Colors.getColorDifference(rgb, h);
 					}
 				}
 				if (tmpCount > 0 && tmpCount > (borders[1] - borders[0])*0.05) {
@@ -370,78 +383,52 @@ public class ImageProcessor {
 					reachedLimit[i] += 1;
 				}
 				count += tmpCount;
+				colorDifference += tmpDifference;
 			}
 			done = reachedLimit[0] >= maxGap && reachedLimit[1] >= maxGap && reachedLimit[2] >= maxGap && reachedLimit[3] >= maxGap;
 		}
-		return count;
+		
+		colorDifference = (colorDifference / count) * 10000;
+		return new int[]{count, (int)colorDifference};
 	}
 	
-	private int[][] extractCoordsOld() {
-		int[] dimensions = {image.getWidth(),image.getHeight()};
-		int[][] intCoord = new int[3][3];			//[1..3] -> red,green,blue | [][0] - x, [][1] - y, [][2] - size in total number of pixels of the blob
-		
-		// algorithm to figure out values for intCoord and sizePixels below
-		// can use lastFrame to draw upon information of the last Frame to make calculations more efficient
-		// for example start searching for dots outward beginning at the center of gravity of the dots in the last frame, ect...
-		// also it's possible that the image might have to mirrored, although it might be inconsistent between webcams
-		// will likely have to add a button in the final product, not something to worry about just now
-		
-		
-		// following is just random values:
-		Random rnd = new Random();
-		for (int i = 0; i < 3; ++i) {
-			for (int j = 0; j < 2; ++j) {
-				//intCoord[i][j] = rnd.nextInt(dimensions[j]);
-				intCoord[i][j] = 0;
-			}
-			intCoord[i][2] = 100;
-		}
-		
-		// end of random values
-		
-		// sample algorithm to track a certain shade of blue
-		int rgb, hit=0;
-		float[] hsl;
-		float[] tmp = Colors.getHSB(0);
-		double upper = tmp[0] * 1.1;
-		double lower = tmp[0] * 0.9;
-		int minHit = 8;
-		for (int i = 1; i < dimensions[0] - 1; i = i + 2) {
-			for (int j = 1; j < dimensions[1] - 1; j = j + 2) {
-				rgb = image.getRGB(i,j);
-				hsl = RGBtoHSL(rgb);
-				hit = 0;
-				//System.out.println(hsl[0]);
-				if (hsl[0] < upper && hsl[0] > lower && hsl[1] > 0.8 && hsl[2] > 0.2) {
-					for (int a = 0; a < 3; ++a) {
-						for (int b = 0; b < 3; ++b) {
-							rgb = image.getRGB(i+a-1,j+b-1);
-							hsl = RGBtoHSL(rgb);
-							if (hsl[0] < upper && hsl[0] > lower && hsl[1] > 0.8) {
-								++hit;
-							}
-						}
-					}
-					//System.out.println(hit);
-				}
-				if (hit > minHit) {
-					intCoord[2][0] = i;
-					intCoord[2][1] = j;
-					intCoord[1][0] = i;
-					intCoord[1][1] = j;
-					intCoord[0][0] = i;
-					intCoord[0][1] = j;
-					break;
-				}
-			}
-			if (hit > minHit) { 
-				break;
+	private int checkColorNarrow(int x, int y) {
+		int rgb = image.getRGB(x, y);
+		float[] hsb = new float[3];
+		Colors.calculateHSB(rgb, hsb);
+		if (hsb[2] < 0.05 || hsb[2] > 0.95 || hsb[1] < 0.1) return -1;
+		/*rgb = 0;
+		for (int i = -averagingRange; i <= averagingRange; ++i) {
+			for (int j = -averagingRange; j <= averagingRange; ++j) {
+				rgb += image.getRGB(x, y);
 			}
 		}
-		
-		// end of algorithm, return values
-		
-		return intCoord;
+		rgb /= (averagingRange*2+1)*(averagingRange*2+1);*/
+		return Colors.getClosestColor(hsb);
+	}
+	
+	private boolean checkColorWide(int x, int y, int h) {
+		int rgb = image.getRGB(x, y);
+		float[] hsb = new float[3];
+		Colors.calculateHSB(rgb, hsb);
+		if (hsb[2] < 0.05 || hsb[2] > 0.95 || hsb[1] < 0.1) return false;
+		if (Colors.getClosestColorWide(rgb) == h) {
+			int oldrgb = background.getRGB(x, y);
+			if (Colors.verifyDifference(rgb, oldrgb, motionThresholdLow)) {
+				Graphics g = debugImage.getGraphics();
+				//g.setColor(new Color(Colors.getRGB(h)));
+				g.setColor(Color.white);
+				g.drawLine(x,y,x,y);
+				return true;
+			}
+			else {
+				Graphics g = debugImage.getGraphics();
+				g.setColor(Color.yellow);
+				g.drawLine(x,y,x,y);
+				return false;
+			}
+		}
+		return false;
 	}
 	
 	public float[] RGBtoHSL(int rgb) {

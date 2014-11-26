@@ -1,6 +1,7 @@
 package gui;
 
 
+import core.Camera;
 import core.Frame;
 import core.FrameBuffer;
 
@@ -15,8 +16,9 @@ public class MouseHandler implements Runnable {
 	private static int WIDTH;
 	private static int HEIGHT;
 	private Robot robot = null;
-	FrameBuffer buffer = null;
-	Frame frame = null;
+	private FrameBuffer buffer = null;
+	private Frame frame = new Frame(new double[][]{{0.5,0.5,0.5},{0.5,0.5,0.5},{0.5,0.5,0.5}},new double[]{0,0,0}, 0, Camera.getInstance().getImage(), Camera.getInstance().getImage());
+	private Frame lastFrame = new Frame(new double[][]{{0.5,0.5,0.5},{0.5,0.5,0.5},{0.5,0.5,0.5}},new double[]{0,0,0}, 0, Camera.getInstance().getImage(), Camera.getInstance().getImage());
 	private boolean active = false;
 	
 	private static int million = 1000000;
@@ -52,6 +54,7 @@ public class MouseHandler implements Runnable {
 			}
 			frame = buffer.popNext();
 			doStuff();
+			lastFrame = frame;
 		}
 	}
 	
@@ -61,7 +64,11 @@ public class MouseHandler implements Runnable {
 			double[] center = frame.getCenter();
 			double[][] coords = frame.getCoords();
 			double[] sizes = frame.getSizes();
-			robot.mouseMove((int)((zoom*(center[0]-0.5)+zoom*0.5)*WIDTH), (int)((zoom*(center[1]-0.5)+zoom*0.5)*WIDTH));
+			
+			double[][] lastCoords = lastFrame.getCoords();
+			double x = (coords[0][0] + lastCoords[0][0]) / 2;
+			double y = (coords[0][1] + lastCoords[0][1]) / 2;
+			robot.mouseMove((int)((zoom*(x-0.5)+zoom*0.5)*WIDTH), (int)((zoom*(y-0.5)+zoom*0.5)*WIDTH));
 			
 			double[] distances = new double[3];		// 0: thumb - index, 1: index - middle, 2: middle - thumb
 			boolean[] touching = new boolean[3];
@@ -85,6 +92,8 @@ public class MouseHandler implements Runnable {
 			rightClick(touching);
 			rightRelease(touching);
 			
+			scrolling(touching, coords);
+			
 		}
 		catch (Exception e) {
 			System.out.println("Couldn't initialize Robot");
@@ -106,7 +115,6 @@ public class MouseHandler implements Runnable {
 			robot.mousePress(InputEvent.BUTTON1_MASK);
             robot.delay(50);
 			robot.mouseRelease(InputEvent.BUTTON1_MASK);
-            robot.delay(50);
 			robot.mousePress(InputEvent.BUTTON1_MASK);
             robot.delay(50);
 			robot.mouseRelease(InputEvent.BUTTON1_MASK);
@@ -136,6 +144,17 @@ public class MouseHandler implements Runnable {
 			rightPressed = -1;
 			robot.mouseRelease(InputEvent.BUTTON3_MASK);
 			System.out.println("rightRelease");
+		}
+	}
+	
+	private void scrolling(boolean[] touching, double[][] coords) {
+		if (coords[1][1] > coords[0][1] && coords[2][1] > coords[0][1]) {
+			if (touching[1]) {
+				robot.mouseWheel(-100);
+			}
+			else {
+				robot.mouseWheel(100);
+			}
 		}
 	}
 	

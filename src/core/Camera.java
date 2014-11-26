@@ -10,12 +10,15 @@ import com.github.sarxos.webcam.ds.ipcam.*;
 
 
 import java.awt.Dimension;
+import java.awt.Graphics;
 
 
 public class Camera {
 	private static Camera instance = null;
 	private Webcam webcam = null;
 	private boolean flip = true;
+	
+	private BufferedImage background = null;
 	
 	
 	private Camera() {
@@ -43,6 +46,7 @@ public class Camera {
 		}
 		webcam.setViewSize(dim[0]);
 		webcam.open();
+		background = getImage();
 	}
 	
 	public static Camera getInstance() {
@@ -58,6 +62,26 @@ public class Camera {
 	
 	public BufferedImage getImage() {
 		BufferedImage out = webcam.getImage();
+		int w = out.getWidth();
+		int h = out.getHeight();
+		if (flip) {
+			BufferedImage copy = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+			Graphics g = copy.getGraphics(); 
+			int sx1, sx2, sy1, sy2; // source rectangle coordinates
+			int dx1, dx2, dy1, dy2; // destination rectangle coordinates
+			dx1 = 0;
+			dy1 = 0;
+			dx2 = w;
+			dy2 = h;
+
+			sx1 = w;
+			sy1 = 0;
+			sx2 = 0;
+			sy2 = h;
+			
+			g.drawImage(out, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, null);
+			out = copy;
+		}
 		return out;
 	}
 	
@@ -71,6 +95,14 @@ public class Camera {
 	
 	public void toggleFlip() {
 		flip = !flip;
+	}
+	
+	public void setBackground() {
+		background = getImage();
+	}
+	
+	public BufferedImage getBackground() {
+		return background;
 	}
 	
 }
