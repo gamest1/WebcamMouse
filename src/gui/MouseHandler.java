@@ -12,9 +12,12 @@ import java.awt.event.InputEvent;
 
 public class MouseHandler implements Runnable {
 	private static MouseHandler instance = null;
-	private static double minDistance = 0.01;
+	private static double minDistance = 0.005;
+	private static double centerRadius = 0.2;
+	private static double centerRadius2 = centerRadius * centerRadius;
 	private static int WIDTH;
 	private static int HEIGHT;
+	private static int[] DIM = new int[2];
 	private Robot robot = null;
 	private FrameBuffer buffer = null;
 	private Frame frame = new Frame(new double[][]{{0.5,0.5,0.5},{0.5,0.5,0.5},{0.5,0.5,0.5}},new double[]{0,0,0}, 0, Camera.getInstance().getImage(), Camera.getInstance().getImage());
@@ -27,12 +30,18 @@ public class MouseHandler implements Runnable {
 	private long rightPressed = -1;
 	private long doubleClicked = -1;
 	
+	private double deltaT = 0.02;
+	private double[] deltaX = {0, 0};
+	private double[] pos = {0.5, 0.5};
+	
 	private MouseHandler() {
 		//numPixels = WIDTH * HEIGHT;
 		buffer = FrameBuffer.getInstance();
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		WIDTH = (int)screenSize.getWidth();
 		HEIGHT = (int)screenSize.getHeight();
+		DIM[0] = WIDTH;
+		DIM[1] = HEIGHT;
 	}
 	
 	public static MouseHandler getInstance() {
@@ -45,6 +54,7 @@ public class MouseHandler implements Runnable {
 	public void run() {
 		while (active) {
 			while (!buffer.hasNext()) {
+				calculatePos();
 				try {
 					Thread.sleep(20);
 				}
@@ -58,17 +68,62 @@ public class MouseHandler implements Runnable {
 		}
 	}
 	
+	private void calculatePos() {
+		for (int i = 0; i < 2; ++i) {
+			pos[i] += deltaX[i] * deltaT;
+			if (pos[i] < 0) {
+				pos[i] = 0;
+			}
+			else if (pos[i] >= 1) {
+				pos[i] = 1;
+			}
+			//System.out.println(pos[0] + " | " + pos[1] + " | " + deltaX[0] + " | " + deltaX[1]);
+		}
+		robot.mouseMove((int)(pos[0] * WIDTH), (int)(pos[1] * HEIGHT));
+	}
+	
+	private void calculateDeltaX() {
+		double[][] coords = frame.getCoords();
+		double[][] lastCoords = lastFrame.getCoords();
+		if (coords[0][0] < 0) {
+			deltaX[0] = 0;
+			deltaX[1] = 0;
+			return;
+		}
+		if (lastCoords[0][0] < 0) {
+			lastCoords[0][0] = coords[0][0];
+		}
+		if (lastCoords[0][1] < 0) {
+			lastCoords[0][1] = coords[0][1];
+		}
+		double x = (coords[0][0] + lastCoords[0][0]) / 2;
+		double y = (coords[0][1] + lastCoords[0][1]) / 2;
+		double dist = Math.sqrt((x - 0.5) * (x - 0.5) + (y - 0.5) * (y - 0.5));
+		if (dist < centerRadius + 0.01) {
+			deltaX[0] = 0;
+			deltaX[1] = 0;
+		}
+		else {
+			double coef = (dist - centerRadius) / dist;
+			deltaX[0] = (x - 0.5) * coef;
+			deltaX[1] = (y - 0.5) * coef;
+			System.out.println(dist + " | " + centerRadius + " | " + coef + " | " + deltaX[0] + " | " + deltaX[1]);
+		}
+		
+	}
+	
 	private void doStuff() {
 		try {
-			double zoom = 1.15;
-			double[] center = frame.getCenter();
+			calculateDeltaX();
 			double[][] coords = frame.getCoords();
 			double[] sizes = frame.getSizes();
+			/*double zoom = 1.15;
+			double[] center = frame.getCenter();
 			
 			double[][] lastCoords = lastFrame.getCoords();
 			double x = (coords[0][0] + lastCoords[0][0]) / 2;
 			double y = (coords[0][1] + lastCoords[0][1]) / 2;
-			robot.mouseMove((int)((zoom*(x-0.5)+zoom*0.5)*WIDTH), (int)((zoom*(y-0.5)+zoom*0.5)*WIDTH));
+			robot.mouseMove((int)((zoom*(x-0.5)+zoom*0.5)*WIDTH), (int)((zoom*(y-0.5)+zoom*0.5)*WIDTH));*/
 			
 			double[] distances = new double[3];		// 0: thumb - index, 1: index - middle, 2: middle - thumb
 			boolean[] touching = new boolean[3];
@@ -85,14 +140,14 @@ public class MouseHandler implements Runnable {
 				}
 			}
 			
-			leftClick(touching);
+			/*leftClick(touching);
 			leftDoubleClick(touching);
 			leftRelease(touching);
 
 			rightClick(touching);
 			rightRelease(touching);
 			
-			scrolling(touching, coords);
+			scrolling(touching, coords);*/
 			
 		}
 		catch (Exception e) {
@@ -105,7 +160,15 @@ public class MouseHandler implements Runnable {
 		if (leftPressed < 0 && touching[0] && !touching[1] && !touching[2]) {
 			leftPressed = System.nanoTime() / million;
 			robot.mousePress(InputEvent.BUTTON1_MASK);
+            robot.delay(50);
+			robot.mouseRelease(InputEvent.BUTTON1_MASK);
 			System.out.println("leftClick");
+		}
+		long leftDown = System.nanoTime() / million - leftPressed;
+		if (leftDown < 100000 && leftDown > 1000 && touching[0] && !touching[1] && !touching[2]) {
+			leftDown = 1000000;
+			robot.mousePress(InputEvent.BUTTON1_MASK);
+			System.out.println("leftDown");
 		}
 	}
 	
@@ -135,6 +198,8 @@ public class MouseHandler implements Runnable {
 		if (rightPressed < 0 && touching[2] && !touching[1] && !touching[0]) {
 			rightPressed = System.nanoTime() / million;
 			robot.mousePress(InputEvent.BUTTON3_MASK);
+            robot.delay(50);
+			robot.mouseRelease(InputEvent.BUTTON3_MASK);
 			System.out.println("rightClick");
 		}
 	}

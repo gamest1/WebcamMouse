@@ -7,8 +7,8 @@ public class Colors {
 	private static float hsb[][] = new float[3][3];
 	
 	private static final float HueRange = 0.03f;
-	private static final float SatRange = 0.10f;
-	private static final float BrightnessRange = 0.25f;
+	private static final float SatRange = 0.15f;
+	private static final float BrightnessRange = 0.35f;
 	
 	private static final float HueRangeWide = 0.25f;
 	private static final float SatRangeWide = 1.40f;

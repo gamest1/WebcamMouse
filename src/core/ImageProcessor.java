@@ -15,7 +15,7 @@ public class ImageProcessor {
 	private static final int numSamples = 4;
 	private static final int numSamples2 = numSamples*numSamples;
 	private static final int numSamples3 = numSamples2*numSamples;
-	private static final int maxGap = 5;
+	private static final int maxGap = 7;
 	private static final int motionThresholdHigh = 60;
 	private static final int motionThresholdLow = 30;
 	BufferedImage image = null;
