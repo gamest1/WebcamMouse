@@ -34,6 +34,8 @@ public class MouseHandler implements Runnable {
 	private double[] deltaX = {0, 0};
 	private double[] pos = {0.5, 0.5};
 	
+	private boolean[] lastTouching = {false, false, false};
+	
 	private MouseHandler() {
 		//numPixels = WIDTH * HEIGHT;
 		buffer = FrameBuffer.getInstance();
@@ -107,7 +109,7 @@ public class MouseHandler implements Runnable {
 			double coef = (dist - centerRadius) / dist;
 			deltaX[0] = (x - 0.5) * coef;
 			deltaX[1] = (y - 0.5) * coef;
-			System.out.println(dist + " | " + centerRadius + " | " + coef + " | " + deltaX[0] + " | " + deltaX[1]);
+			//System.out.println(dist + " | " + centerRadius + " | " + coef + " | " + deltaX[0] + " | " + deltaX[1]);
 		}
 		
 	}
@@ -129,25 +131,31 @@ public class MouseHandler implements Runnable {
 			boolean[] touching = new boolean[3];
 			double distx, disty;
 			for (int i = 0; i < 3; ++i) {
+				if (coords[i][0] < 0 || coords[(i+1)%3][0] < 0) {
+					touching[i] = lastTouching[i];
+					continue;
+				}
 				distx = coords[i][0] - coords[(i+1)%3][0];
 				disty = coords[i][1] - coords[(i+1)%3][1];
 				distances[i] = distx * distx + disty * disty - (sizes[i] + sizes[(i+1)%3]) / Math.PI;
 				if (distances[i] < minDistance) {
 					touching[i] = true;
+					lastTouching[i] = true;
 				}
 				else {
 					touching[i] = false;
+					lastTouching[i] = true;
 				}
 			}
 			
-			/*leftClick(touching);
+			leftClick(touching);
 			leftDoubleClick(touching);
 			leftRelease(touching);
 
 			rightClick(touching);
 			rightRelease(touching);
 			
-			scrolling(touching, coords);*/
+			scrolling(touching, coords);
 			
 		}
 		catch (Exception e) {
@@ -213,12 +221,15 @@ public class MouseHandler implements Runnable {
 	}
 	
 	private void scrolling(boolean[] touching, double[][] coords) {
+		if (coords[0][1] < 0 || coords[1][1] < 0 || coords[2][1] < 0) {
+			return;
+		}
 		if (coords[1][1] > coords[0][1] && coords[2][1] > coords[0][1]) {
 			if (touching[1]) {
-				robot.mouseWheel(-100);
+				robot.mouseWheel(-3);
 			}
 			else {
-				robot.mouseWheel(100);
+				robot.mouseWheel(3);
 			}
 		}
 	}
