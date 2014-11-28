@@ -144,7 +144,7 @@ public class MouseHandler implements Runnable {
 				}
 				else {
 					touching[i] = false;
-					lastTouching[i] = true;
+					lastTouching[i] = false;
 				}
 			}
 			
