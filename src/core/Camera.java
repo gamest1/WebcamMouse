@@ -31,22 +31,29 @@ public class Camera {
 		    catch (Exception e) {System.out.println("Ooops!"); System.exit(1);}
 			webcam = Webcam.getDefault();
 		}
+		try {
+			webcam.getViewSize();
+		}
+		catch(Exception e) {
+			webcam = null;
+		}
 		if (webcam != null) {
 			System.out.println("Webcam: " + webcam.getName());
+			Dimension[] dim = webcam.getViewSizes();
+			for (int i = 0; i < dim.length; ++i) {
+				if ((dim[i].getHeight()*dim[i].getWidth()) > dim[0].getHeight()*dim[0].getWidth()) {
+					dim[0] = dim[i];
+				}
+			}
+			webcam.setViewSize(dim[0]);
+			webcam.open();
+			background = getImage();
 		}
 		else {
 			System.out.println("No webcam detected");
-			System.exit(1);
+			//webcam = null;
+			//System.exit(1);
 		}
-		Dimension[] dim = webcam.getViewSizes();
-		for (int i = 0; i < dim.length; ++i) {
-			if ((dim[i].getHeight()*dim[i].getWidth()) > dim[0].getHeight()*dim[0].getWidth()) {
-				dim[0] = dim[i];
-			}
-		}
-		webcam.setViewSize(dim[0]);
-		webcam.open();
-		background = getImage();
 	}
 	
 	public static Camera getInstance() {

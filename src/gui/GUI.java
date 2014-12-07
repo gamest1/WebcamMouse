@@ -46,6 +46,13 @@ public class GUI extends JFrame implements ActionListener {
     
 	private GUI() {
 		super("WebcamMouse");
+		if (Camera.getInstance().getWebcam() == null) {
+			JLabel label = new JLabel("No webcam detected!");
+			this.add(label);
+			this.pack();
+			this.setVisible(true);
+			return;
+		}
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		mainPaneSetup();
 		buttonPane.add(Box.createRigidArea(new Dimension(0,0)));
