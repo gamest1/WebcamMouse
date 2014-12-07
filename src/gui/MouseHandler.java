@@ -149,8 +149,10 @@ public class MouseHandler implements Runnable {
 			}
 			
 			leftClick(touching);
-			leftDoubleClick(touching);
 			leftRelease(touching);
+			
+			leftDoubleClick(touching);
+			leftDoubleRelease(touching);
 
 			rightClick(touching);
 			rightRelease(touching);
@@ -180,8 +182,17 @@ public class MouseHandler implements Runnable {
 		}
 	}
 	
+	private void leftRelease(boolean[] touching) {
+		if (leftPressed > 0 && !touching[0]) {
+			leftPressed = -1;
+			doubleClicked = -1;
+			robot.mouseRelease(InputEvent.BUTTON1_MASK);
+			System.out.println("leftRelease");
+		}
+	}
+	
 	private void leftDoubleClick(boolean[] touching) {
-		if (doubleClicked < 0 && touching[0] && touching[1] && !touching[2]) {
+		if (doubleClicked < 0 && touching[0] && (touching[2] || touching[1])) {
 			doubleClicked = System.nanoTime() / million;
 			robot.mousePress(InputEvent.BUTTON1_MASK);
             robot.delay(50);
@@ -193,12 +204,10 @@ public class MouseHandler implements Runnable {
 		}
 	}
 	
-	private void leftRelease(boolean[] touching) {
-		if (leftPressed > 0 && !touching[0]) {
-			leftPressed = -1;
+	private void leftDoubleRelease(boolean[] touching) {
+		if (doubleClicked > 0 && !touching[0] || (!touching[2] && !touching[1])) {
 			doubleClicked = -1;
-			robot.mouseRelease(InputEvent.BUTTON1_MASK);
-			System.out.println("leftRelease");
+			System.out.println("doubleRelease");
 		}
 	}
 	
