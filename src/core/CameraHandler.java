@@ -9,6 +9,7 @@ public class CameraHandler extends Thread {
 	
 	private CameraHandler() {
 		interval = 1000 / fps;
+		Camera camera = Camera.getInstance();
 	}
 	
 	public static CameraHandler getInstance() {
