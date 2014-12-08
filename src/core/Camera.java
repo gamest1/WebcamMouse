@@ -26,7 +26,7 @@ public class Camera {
 		if (webcam == null) {
 		    try {
 		    	Webcam.setDriver(new IpCamDriver());
-		    	IpCamDeviceRegistry.register(new IpCamDevice("Find5", "http://192.168.178.50:8080/video", IpCamMode.PUSH));
+		    	IpCamDeviceRegistry.register(new IpCamDevice("Find5", "http://192.168.178.51:8080/video", IpCamMode.PUSH));
 		    }
 		    catch (Exception e) {System.out.println("Ooops!"); System.exit(1);}
 			webcam = Webcam.getDefault();

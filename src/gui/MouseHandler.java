@@ -12,7 +12,7 @@ import java.awt.event.InputEvent;
 
 public class MouseHandler implements Runnable {
 	private static MouseHandler instance = null;
-	private static double minDistance = 0.005;
+	private static double minDistance = 0.015;
 	private static double centerRadius = 0.2;
 	private static double centerRadius2 = centerRadius * centerRadius;
 	private static int WIDTH;
@@ -176,7 +176,7 @@ public class MouseHandler implements Runnable {
 		}
 		long leftDown = System.nanoTime() / million - leftPressed;
 		if (leftDown < 100000 && leftDown > 1000 && touching[0] && !touching[1] && !touching[2]) {
-			leftDown = 1000000;
+			leftPressed = 1000000;
 			robot.mousePress(InputEvent.BUTTON1_MASK);
 			System.out.println("leftDown");
 		}
@@ -185,7 +185,6 @@ public class MouseHandler implements Runnable {
 	private void leftRelease(boolean[] touching) {
 		if (leftPressed > 0 && !touching[0]) {
 			leftPressed = -1;
-			doubleClicked = -1;
 			robot.mouseRelease(InputEvent.BUTTON1_MASK);
 			System.out.println("leftRelease");
 		}
@@ -205,7 +204,7 @@ public class MouseHandler implements Runnable {
 	}
 	
 	private void leftDoubleRelease(boolean[] touching) {
-		if (doubleClicked > 0 && !touching[0] || (!touching[2] && !touching[1])) {
+		if (doubleClicked > 0 && (!touching[0] || (!touching[2] && !touching[1]))) {
 			doubleClicked = -1;
 			System.out.println("doubleRelease");
 		}
@@ -235,10 +234,10 @@ public class MouseHandler implements Runnable {
 		}
 		if (coords[1][1] > coords[0][1] && coords[2][1] > coords[0][1]) {
 			if (touching[1]) {
-				robot.mouseWheel(-3);
+				robot.mouseWheel(-1);
 			}
 			else {
-				robot.mouseWheel(3);
+				robot.mouseWheel(1);
 			}
 		}
 	}

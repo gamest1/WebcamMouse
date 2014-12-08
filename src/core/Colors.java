@@ -10,8 +10,8 @@ public class Colors {
 	private static final float SatRange = 0.15f;
 	private static final float BrightnessRange = 0.35f;
 	
-	private static final float HueRangeWide = 0.25f;
-	private static final float SatRangeWide = 1.40f;
+	private static final float HueRangeWide = 0.09f;
+	private static final float SatRangeWide = 0.90f;
 	private static final float BrightnessRangeWide = 1.45f;
 	
 	
